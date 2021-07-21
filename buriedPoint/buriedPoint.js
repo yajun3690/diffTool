@@ -2,30 +2,28 @@
  * @Description:
  * @Author: Ray
  * @Date: 2021-07-19 11:13:29
- * @LastEditTime: 2021-07-20 17:53:47
+ * @LastEditTime: 2021-07-21 11:09:13
  * @LastEditors: Ray
  */
 //1，数据存储模块
 /*
-key:ReadArticleId
+key:ReadArticleId //页面特征键值
 value:{
-   status: 'Created',
-   readStartDate: Date.now(),
-   endDate: '',
-   readTime: 0,
-   readPercent: 0,
-  visibileDate: '',
-  hiddenDate: '',
-  invalidDate: '',
-  validReadTime:''
+  status: 'Created',//埋点状态
+  readStartDate: Date.now(),//开始埋点时间戳
+  endDate: '',//结束埋点时间戳
+  readTime: 0,//阅读时长
+  readPercent: 0,//阅读百分比
+  visibileDate: '',//页面激活时间戳
+  hiddenDate: '',//页面隐藏时间戳
+  invalidTime: '',//无效阅读时间
+  validReadTime:''//有效阅读时间
 }
 status:
 数据状态
   1, 创建 Created
   2, 进行 InProgress
-  3, 暂停 Pause
-  4, 刷新 Refresh
-  5, 完成 Completed
+  3, 完成 Completed
 */
 const setLocalStorage = (key, value) => {
   value = typeof value === 'object' ? JSON.stringify(value) : value
@@ -42,21 +40,11 @@ const removeLocalStorage = (key) => {
 }
 
 //2，有效阅读时长计算模块
-var articleList = [
-  'ReadArticleId0',
-  'ReadArticleId1',
-  'ReadArticleId2',
-  'ReadArticleId3',
-  'ReadArticleId4',
-  'ReadArticleId5',
-]
-var Num = parseInt(Math.round(Math.random().toFixed(1) * 10) / 2)
+//页面特征键值
 var atticleId = 'ReadArticleId0'
 //页面加载,初始化数据
 window.onload = function () {
-  console.log('页面加载,初始化数据')
   let oldStorage = getLocalStorage(atticleId, true)
-  console.log('是否有历史记录，判断是否刷新', oldStorage)
   //是否有历史记录，判断是否为刷新
   if (oldStorage) {
     // 重置结束时间
@@ -70,7 +58,7 @@ window.onload = function () {
       readPercent: 0,
       visibileDate: '',
       hiddenDate: '',
-      invalidDate: '',
+      invalidTime: '',
       validReadTime: '',
     }
     setLocalStorage(atticleId, createData)
@@ -81,9 +69,9 @@ window.onload = function () {
     document.documentElement.scrollTop ||
     window.pageYOffset ||
     document.body.scrollTop
+  //内容阅读完毕判定
   if (getScrollHeight() - F.offsetHeight <= getViewPortHeight() + scrollTop) {
     setReadData(null, null, null, null, 1, null, null, null, null)
-    console.log('读完了')
   }
 }
 function setReadData(
@@ -94,7 +82,7 @@ function setReadData(
   readPercentParm,
   readVisibileDateParm,
   readHiddenDateParm,
-  readInvalidDateParm,
+  readInvalidTimeParm,
   ReadValidReadTime
 ) {
   let oldStorage = getLocalStorage(atticleId, true)
@@ -120,8 +108,8 @@ function setReadData(
   readHiddenDateParm != 'null'
     ? (oldStorage.hiddenDate = readHiddenDateParm)
     : false
-  // invalidDate
-  readInvalidDateParm ? (oldStorage.invalidDate = readInvalidDateParm) : false
+  // 无效阅读 invalidTime
+  readInvalidTimeParm ? (oldStorage.invalidTime = readInvalidTimeParm) : false
   ReadValidReadTime ? (oldStorage.validReadTime = ReadValidReadTime) : false
   setLocalStorage(atticleId, oldStorage)
 }
@@ -129,14 +117,12 @@ function setReadData(
 document.addEventListener('visibilitychange', function () {
   var isHidden = document.hidden
   if (isHidden) {
-    document.title = '隐藏'
     setReadData(null, null, null, null, null, null, Date.now(), null, null)
   } else {
-    document.title = '显示'
-    var AllInvalidDate
-    if (getLocalStorage(atticleId, true).invalidDate) {
-      AllInvalidDate =
-        getLocalStorage(atticleId, true).invalidDate +
+    var AllInvalidTime
+    if (getLocalStorage(atticleId, true).invalidTime) {
+      AllInvalidTime =
+        getLocalStorage(atticleId, true).invalidTime +
         Number(
           (
             (Date.now() - getLocalStorage(atticleId, true).hiddenDate) /
@@ -144,7 +130,7 @@ document.addEventListener('visibilitychange', function () {
           ).toFixed(1)
         )
     } else {
-      AllInvalidDate = Number(
+      AllInvalidTime = Number(
         (
           (Date.now() - getLocalStorage(atticleId, true).hiddenDate) /
           1000
@@ -160,7 +146,7 @@ document.addEventListener('visibilitychange', function () {
       null,
       Date.now(),
       null,
-      AllInvalidDate,
+      AllInvalidTime,
       null
     )
   }
@@ -216,12 +202,6 @@ function CalculationReadPercent() {
   var readHight = getScrollHeight() - F.offsetHeight - getViewPortHeight()
   var readPercent = Number((scrollTop / readHight).toFixed(2))
   if (readPercent <= 1 && readPercent > 0) {
-    console.log('阅读百分比', readPercent)
-    // status: 'Created',
-    // readStartDate: Date.now(),
-    // endDate: '',
-    // readTime: 0,
-    // readPercent: 0,
     setReadData(
       'InProgress',
       null,
@@ -252,7 +232,7 @@ function onbeforeunload_handler() {
       1000
     ).toFixed(1)
   )
-  validReadTime = readTime - getLocalStorage(atticleId, true).invalidDate
+  validReadTime = readTime - getLocalStorage(atticleId, true).invalidTime
   setReadData(
     'Completed',
     null,
@@ -264,4 +244,7 @@ function onbeforeunload_handler() {
     null,
     validReadTime
   )
+  //调用Api传递数据
+
+  //清除存储数据
 }

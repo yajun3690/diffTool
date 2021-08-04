@@ -2,7 +2,7 @@
  * @Description:
  * @Author: Ray
  * @Date: 2021-07-19 11:13:29
- * @LastEditTime: 2021-07-21 11:09:13
+ * @LastEditTime: 2021-08-04 13:48:58
  * @LastEditors: Ray
  */
 //1，数据存储模块
@@ -121,14 +121,18 @@ document.addEventListener('visibilitychange', function () {
   } else {
     var AllInvalidTime
     if (getLocalStorage(atticleId, true).invalidTime) {
-      AllInvalidTime =
-        getLocalStorage(atticleId, true).invalidTime +
-        Number(
-          (
-            (Date.now() - getLocalStorage(atticleId, true).hiddenDate) /
-            1000
-          ).toFixed(1)
-        )
+      if (getLocalStorage(atticleId, true).hiddenDate) {
+        AllInvalidTime =
+          getLocalStorage(atticleId, true).invalidTime +
+          Number(
+            (
+              (Date.now() - getLocalStorage(atticleId, true).hiddenDate) /
+              1000
+            ).toFixed(1)
+          )
+      } else {
+        AllInvalidTime = getLocalStorage(atticleId, true).invalidTime
+      }
     } else {
       AllInvalidTime = Number(
         (

@@ -2,16 +2,14 @@
  * @Description:
  * @Author: Ray
  * @Date: 2021-07-19 11:13:29
- * @LastEditTime: 2021-08-30 11:24:25
+ * @LastEditTime: 2021-08-31 10:39:15
  * @LastEditors: Ray
  */
 //1，数据存储模块
 /*
 key:ReadArticleId //页面特征键值
 value:{
-  status: 'Created',//埋点状态
   readStartDate: Date.now(),//开始埋点时间戳
-  endDate: '',//结束埋点时间戳
   readTime: 0,//阅读时长
   readPercent: 0,//阅读百分比
   visibileDate: '',//页面激活时间戳
@@ -19,11 +17,6 @@ value:{
   invalidTime: '',//无效阅读时间
   validReadTime:''//有效阅读时间
 }
-status:
-数据状态
-  1, 创建 Created
-  2, 进行 InProgress
-  3, 完成，掉用接口记录 Completed
 */
 /*埋点信息
 behavirorData:{
@@ -79,17 +72,11 @@ window.onload = function () {
   //是否有历史记录，判断是否为刷新
   if (oldStorage) {
     // 重置结束时间
-    if (buriedPointInterval) {
-      clearInterval(buriedPointInterval)
-    }
     // removeLocalStorage(articleId)
     removeLocalStorage('behavirorData')
-    // setReadData('InProgress', null, null, null, null, null, null, null, null)
   }
   let createData = {
-    status: 'Created',
     readStartDate: Date.now(),
-    endDate: '',
     readTime: 0,
     readPercent: 0,
     visibileDate: '',
@@ -107,14 +94,12 @@ window.onload = function () {
     document.body.scrollTop
   //短页面进入后内容阅读完毕判定
   if (getScrollHeight() - F.offsetHeight <= getViewPortHeight() + scrollTop) {
-    setReadData(null, null, null, null, 1, null, null, null, null)
+    setReadData(null, null, 1, null, null, null, null)
     CalculationReadPercent()
   }
 }
 function setReadData(
-  readStatusParm,
   readStartDateParm,
-  readEndDateParm,
   readTimeParm,
   readPercentParm,
   readVisibileDateParm,
@@ -124,12 +109,8 @@ function setReadData(
   percent100Readed
 ) {
   let oldStorage = getLocalStorage(atticleId, true)
-  //阅读状态
-  readStatusParm ? (oldStorage.status = readStatusParm) : false
   //开始阅读时间
   readStartDateParm ? (oldStorage.readStartDate = readStartDateParm) : false
-  //阅读结束时间
-  readEndDateParm != 'null' ? (oldStorage.endDate = readEndDateParm) : false
   //阅读时长
   readTimeParm ? (oldStorage.readTime = readTimeParm) : false
   //阅读百分比
@@ -206,36 +187,15 @@ function CalculationReadPercent() {
   var readHight = getScrollHeight() - F.offsetHeight - getViewPortHeight()
   var readPercent = Number((scrollTop / readHight).toFixed(2))
   if (readPercent <= 1 && readPercent > 0) {
-    setReadData(
-      'InProgress',
-      null,
-      null,
-      null,
-      readPercent,
-      null,
-      null,
-      null,
-      null
-    )
+    setReadData(null, null, readPercent, null, null, null, null)
   }
   if (getScrollHeight() - F.offsetHeight <= getViewPortHeight() + scrollTop) {
     //判断埋点信息即发
     if (getLocalStorage(atticleId, true).percent100Readed) {
-      setReadData('InProgress', null, null, null, 1, null, null, null, null)
+      setReadData(null, null, 1, null, null, null, null)
     } else {
       console.log('阅读百分之百即发一次')
-      setReadData(
-        'InProgress',
-        null,
-        null,
-        null,
-        1,
-        null,
-        null,
-        null,
-        null,
-        true
-      )
+      setReadData(null, null, 1, null, null, null, null, true)
       complutebehavirorData()
       console.log(getLocalStorage('behavirorData', true))
     }
@@ -327,7 +287,7 @@ function complutebehavirorData() {
 document.addEventListener('visibilitychange', function () {
   var isHidden = document.hidden
   if (isHidden) {
-    setReadData(null, null, null, null, null, null, Date.now(), null, null)
+    setReadData(null, null, null, null, Date.now(), null, null)
   } else {
     var AllInvalidTime
     if (getLocalStorage(atticleId, true).invalidTime) {
@@ -352,17 +312,7 @@ document.addEventListener('visibilitychange', function () {
       )
     }
 
-    setReadData(
-      null,
-      null,
-      null,
-      null,
-      null,
-      Date.now(),
-      null,
-      AllInvalidTime,
-      null
-    )
+    setReadData(null, null, null, Date.now(), null, AllInvalidTime, null)
   }
 })
 // Api模块
@@ -388,17 +338,7 @@ function onbeforeunload_handler() {
     ).toFixed(1)
   )
   validReadTime = readTime - getLocalStorage(atticleId, true).invalidTime
-  setReadData(
-    'Completed',
-    null,
-    Date.now(),
-    readTime,
-    null,
-    null,
-    null,
-    null,
-    validReadTime
-  )
+  setReadData(null, readTime, null, null, null, null, validReadTime)
   //调用Api传递数据
 
   //清除存储数据
@@ -415,7 +355,6 @@ window.onbeforeunload = sendAndDeleteData
 
 //回收清理数据
 function DeleteData(atticleId) {
-  console.log('atticleId', atticleId)
   if (buriedPointInterval) {
     clearInterval(buriedPointInterval)
   }

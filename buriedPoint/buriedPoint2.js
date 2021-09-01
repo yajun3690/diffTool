@@ -2,7 +2,7 @@
  * @Description:
  * @Author: Ray
  * @Date: 2021-07-19 11:13:29
- * @LastEditTime: 2021-08-31 10:39:15
+ * @LastEditTime: 2021-09-01 14:41:33
  * @LastEditors: Ray
  */
 //1，数据存储模块
@@ -240,15 +240,17 @@ function complutebehavirorData() {
   //readTime
   if (getLocalStorage('behavirorData', true)) {
     let data = getLocalStorage('behavirorData', true)
-    data.percentObject[
-      'percent' +
-        Number(
-          toFixed(
-            compluteMin(getLocalStorage(atticleId, true).readPercent),
-            2
-          ) * 100
-        ).toFixed(0)
-    ] = getLocalStorage(atticleId, true).validReadTime
+    if (getLocalStorage(atticleId, true).validReadTime > 0) { 
+      data.percentObject[
+        'percent' +
+          Number(
+            toFixed(
+              compluteMin(getLocalStorage(atticleId, true).readPercent),
+              2
+            ) * 100
+          ).toFixed(0)
+      ] = getLocalStorage(atticleId, true).validReadTime
+    }
     setLocalStorage('behavirorData', data)
   } else {
     let data = {
@@ -337,8 +339,10 @@ function onbeforeunload_handler() {
       1000
     ).toFixed(1)
   )
-  validReadTime = readTime - getLocalStorage(atticleId, true).invalidTime
-  setReadData(null, readTime, null, null, null, null, validReadTime)
+  if (readTime - getLocalStorage(atticleId, true).invalidTime > 0) {
+    validReadTime = readTime - getLocalStorage(atticleId, true).invalidTime
+    setReadData(null, readTime, null, null, null, null, validReadTime)
+  }
   //调用Api传递数据
 
   //清除存储数据

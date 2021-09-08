@@ -2,7 +2,7 @@
  * @Description:
  * @Author: Ray
  * @Date: 2021-07-19 11:13:29
- * @LastEditTime: 2021-09-01 14:41:33
+ * @LastEditTime: 2021-09-08 15:45:29
  * @LastEditors: Ray
  */
 //1，数据存储模块
@@ -23,7 +23,7 @@ behavirorData:{
   behavirorId:'43534534',
   articleId:'123423423',
   startTime:'3442342352523523',
-  percentObject:{
+  BehaviorDetail:{
     percent0: 0,
     percent5: 0,
     percent10: 0,
@@ -65,7 +65,8 @@ const removeLocalStorage = (key) => {
 
 //2，有效阅读时长计算模块
 //页面特征键值
-var atticleId = 'ReadArticleId0'
+var atticleId = 'articleDetail'
+var guid = Guid()
 //页面加载,初始化数据
 window.onload = function () {
   let oldStorage = getLocalStorage(atticleId, true)
@@ -158,6 +159,27 @@ function getScrollHeight() {
   )
 }
 
+//guid
+function Guid() {
+  function S4() {
+    return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1)
+  }
+  return (
+    S4() +
+    S4() +
+    // '-' +
+    S4() +
+    // '-' +
+    S4() +
+    // '-' +
+    S4() +
+    // '-' +
+    S4() +
+    S4() +
+    S4()
+  )
+}
+
 //节流函数
 function throttling(fn, wait, maxTimelong) {
   var timeout = null,
@@ -194,10 +216,9 @@ function CalculationReadPercent() {
     if (getLocalStorage(atticleId, true).percent100Readed) {
       setReadData(null, null, 1, null, null, null, null)
     } else {
-      console.log('阅读百分之百即发一次')
       setReadData(null, null, 1, null, null, null, null, true)
       complutebehavirorData()
-      console.log(getLocalStorage('behavirorData', true))
+      saveData()
     }
   }
   //记录百分比时触发
@@ -240,8 +261,8 @@ function complutebehavirorData() {
   //readTime
   if (getLocalStorage('behavirorData', true)) {
     let data = getLocalStorage('behavirorData', true)
-    if (getLocalStorage(atticleId, true).validReadTime > 0) { 
-      data.percentObject[
+    if (getLocalStorage(atticleId, true).validReadTime > 0) {
+      data.BehaviorDetail[
         'percent' +
           Number(
             toFixed(
@@ -254,10 +275,18 @@ function complutebehavirorData() {
     setLocalStorage('behavirorData', data)
   } else {
     let data = {
-      behavirorId: '43534534',
-      articleId: atticleId,
-      startTime: getLocalStorage(atticleId, true).readStartDate,
-      percentObject: {
+      BehaviroId: guid,
+      BehaviroType: 'TimerReport',
+      OpenId: 'string',
+      UnionId: 'string',
+      MdmCode: 'string',
+      Email: 'string',
+      ContentId: atticleId,
+      ContentTitle: document.title,
+      Role: 'hcp',
+      PageUrl: window.location.search,
+      // startTime: getLocalStorage(atticleId, true).readStartDate,
+      BehaviorDetail: {
         percent0: 0,
         percent5: 0,
         percent10: 0,
@@ -318,16 +347,32 @@ document.addEventListener('visibilitychange', function () {
   }
 })
 // Api模块
-
+function saveData() {
+  axios
+    .post(
+      'https://vhomeapitst.organonchina.com.cn/api/UserBehavior/ReportBehavior',
+      getLocalStorage('behavirorData', true)
+      // {
+      //   headers: {
+      //     Authorization: 'Bearer ' + getCookie('saveHcpToken'),
+      //   },
+      // }
+    )
+    .then((res) => {
+      console.log(res, '提交成功')
+    })
+    .catch((err) => {
+      console.log(err)
+    })
+}
 //step1: 滑动监听，到达点位触发
 // 监听滚动函数
-window.addEventListener('scroll', throttling(CalculationReadPercent, 200, 500))
+window.addEventListener('scroll', throttling(CalculationReadPercent, 200, 300))
 
 //step2: 定时推送埋点信息
 var buriedPointInterval = setInterval(() => {
-  console.log('定时推送埋点信息')
   CalculationReadPercent()
-  console.log(getLocalStorage('behavirorData', true))
+  saveData()
 }, 10000)
 
 //step3:
@@ -350,13 +395,10 @@ function onbeforeunload_handler() {
 function sendAndDeleteData() {
   CalculationReadPercent()
   //发送埋点信息
-  console.log(getLocalStorage('behavirorData', true))
   //清除数据
-  console.log('atticleId', atticleId)
   DeleteData(atticleId)
 }
 window.onbeforeunload = sendAndDeleteData
-
 //回收清理数据
 function DeleteData(atticleId) {
   if (buriedPointInterval) {

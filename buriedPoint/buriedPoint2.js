@@ -2,7 +2,7 @@
  * @Description:
  * @Author: Ray
  * @Date: 2021-07-19 11:13:29
- * @LastEditTime: 2021-09-08 15:45:29
+ * @LastEditTime: 2021-09-22 10:06:59
  * @LastEditors: Ray
  */
 //1，数据存储模块
@@ -65,15 +65,17 @@ const removeLocalStorage = (key) => {
 
 //2，有效阅读时长计算模块
 //页面特征键值
-var atticleId = 'articleDetail'
+var articleId = window.location.href.split('/')[
+  window.location.href.split('/').length - 1
+]
 var guid = Guid()
 //页面加载,初始化数据
 window.onload = function () {
-  let oldStorage = getLocalStorage(atticleId, true)
+  let oldStorage = getLocalStorage('behavirorData', true)
   //是否有历史记录，判断是否为刷新
   if (oldStorage) {
     // 重置结束时间
-    // removeLocalStorage(articleId)
+    removeLocalStorage('articleData')
     removeLocalStorage('behavirorData')
   }
   let createData = {
@@ -86,9 +88,10 @@ window.onload = function () {
     validReadTime: '',
     percent100Readed: false,
   }
-  setLocalStorage(atticleId, createData)
+  setLocalStorage('articleData', createData)
+  CalculationReadPercent()
   // var F = document.getElementById('footer')
-  var F = document.getElementsByClassName('content')[0]
+  var F = document.getElementsByClassName('slide_content')[0]
   var scrollTop =
     document.documentElement.scrollTop ||
     window.pageYOffset ||
@@ -109,7 +112,7 @@ function setReadData(
   ReadValidReadTime,
   percent100Readed
 ) {
-  let oldStorage = getLocalStorage(atticleId, true)
+  let oldStorage = getLocalStorage('articleData', true)
   //开始阅读时间
   readStartDateParm ? (oldStorage.readStartDate = readStartDateParm) : false
   //阅读时长
@@ -134,7 +137,7 @@ function setReadData(
   if (percent100Readed) {
     oldStorage.percent100Readed = true
   }
-  setLocalStorage(atticleId, oldStorage)
+  setLocalStorage('articleData', oldStorage)
 }
 
 //3，文章阅读百分比模块
@@ -201,7 +204,7 @@ function CalculationReadPercent() {
   // var C = document.getElementById('content')
   // var F = document.getElementById('footer')
   var C = document.getElementsByClassName('newsContent')[0]
-  var F = document.getElementsByClassName('content')[0]
+  var F = document.getElementsByClassName('slide_content')[0]
   var scrollTop =
     document.documentElement.scrollTop ||
     window.pageYOffset ||
@@ -213,7 +216,7 @@ function CalculationReadPercent() {
   }
   if (getScrollHeight() - F.offsetHeight <= getViewPortHeight() + scrollTop) {
     //判断埋点信息即发
-    if (getLocalStorage(atticleId, true).percent100Readed) {
+    if (getLocalStorage('articleData', true).percent100Readed) {
       setReadData(null, null, 1, null, null, null, null)
     } else {
       setReadData(null, null, 1, null, null, null, null, true)
@@ -261,16 +264,16 @@ function complutebehavirorData() {
   //readTime
   if (getLocalStorage('behavirorData', true)) {
     let data = getLocalStorage('behavirorData', true)
-    if (getLocalStorage(atticleId, true).validReadTime > 0) {
+    if (getLocalStorage('articleData', true).validReadTime > 0) {
       data.BehaviorDetail[
         'percent' +
           Number(
             toFixed(
-              compluteMin(getLocalStorage(atticleId, true).readPercent),
+              compluteMin(getLocalStorage('articleData', true).readPercent),
               2
             ) * 100
           ).toFixed(0)
-      ] = getLocalStorage(atticleId, true).validReadTime
+      ] = getLocalStorage('articleData', true).validReadTime
     }
     setLocalStorage('behavirorData', data)
   } else {
@@ -281,11 +284,11 @@ function complutebehavirorData() {
       UnionId: 'string',
       MdmCode: 'string',
       Email: 'string',
-      ContentId: atticleId,
-      ContentTitle: document.title,
+      ContentId: articleId,
+      ContentTitle: $('.ContentTitle').text(),
       Role: 'hcp',
-      PageUrl: window.location.search,
-      // startTime: getLocalStorage(atticleId, true).readStartDate,
+      PageUrl: window.location.href,
+      // startTime: getLocalStorage('articleData', true).readStartDate,
       BehaviorDetail: {
         percent0: 0,
         percent5: 0,
@@ -321,23 +324,23 @@ document.addEventListener('visibilitychange', function () {
     setReadData(null, null, null, null, Date.now(), null, null)
   } else {
     var AllInvalidTime
-    if (getLocalStorage(atticleId, true).invalidTime) {
-      if (getLocalStorage(atticleId, true).hiddenDate) {
+    if (getLocalStorage('articleData', true).invalidTime) {
+      if (getLocalStorage('articleData', true).hiddenDate) {
         AllInvalidTime =
-          getLocalStorage(atticleId, true).invalidTime +
+          getLocalStorage('articleData', true).invalidTime +
           Number(
             (
-              (Date.now() - getLocalStorage(atticleId, true).hiddenDate) /
+              (Date.now() - getLocalStorage('articleData', true).hiddenDate) /
               1000
             ).toFixed(1)
           )
       } else {
-        AllInvalidTime = getLocalStorage(atticleId, true).invalidTime
+        AllInvalidTime = getLocalStorage('articleData', true).invalidTime
       }
     } else {
       AllInvalidTime = Number(
         (
-          (Date.now() - getLocalStorage(atticleId, true).hiddenDate) /
+          (Date.now() - getLocalStorage('articleData', true).hiddenDate) /
           1000
         ).toFixed(1)
       )
@@ -346,64 +349,68 @@ document.addEventListener('visibilitychange', function () {
     setReadData(null, null, null, Date.now(), null, AllInvalidTime, null)
   }
 })
+function getCookie(name) {
+  var arr,
+    reg = new RegExp('(^| )' + name + '=([^;]*)(;|$)')
+
+  if ((arr = window.document.cookie.match(reg))) return unescape(arr[2])
+  else return null
+}
 // Api模块
 function saveData() {
   axios
     .post(
       'https://vhomeapitst.organonchina.com.cn/api/UserBehavior/ReportBehavior',
-      getLocalStorage('behavirorData', true)
-      // {
-      //   headers: {
-      //     Authorization: 'Bearer ' + getCookie('saveHcpToken'),
-      //   },
-      // }
+      getLocalStorage('behavirorData', true),
+      {
+        headers: {
+          Authorization: 'Bearer ' + getCookie('vhomeToken'),
+        },
+      }
     )
-    .then((res) => {
-      console.log(res, '提交成功')
-    })
+    .then((res) => {})
     .catch((err) => {
       console.log(err)
     })
 }
 //step1: 滑动监听，到达点位触发
 // 监听滚动函数
-window.addEventListener('scroll', throttling(CalculationReadPercent, 200, 300))
+window.addEventListener('scroll', throttling(CalculationReadPercent, 80, 100))
 
 //step2: 定时推送埋点信息
 var buriedPointInterval = setInterval(() => {
   CalculationReadPercent()
   saveData()
-}, 10000)
+}, 3000)
 
 //step3:
 //页面即将刷新与关闭时触发函数
 function onbeforeunload_handler() {
   readTime = Number(
     (
-      (Date.now() - getLocalStorage(atticleId, true).readStartDate) /
+      (Date.now() - getLocalStorage('articleData', true).readStartDate) /
       1000
     ).toFixed(1)
   )
-  if (readTime - getLocalStorage(atticleId, true).invalidTime > 0) {
-    validReadTime = readTime - getLocalStorage(atticleId, true).invalidTime
+  if (readTime - getLocalStorage('articleData', true).invalidTime > 0) {
+    validReadTime = readTime - getLocalStorage('articleData', true).invalidTime
     setReadData(null, readTime, null, null, null, null, validReadTime)
   }
   //调用Api传递数据
-
   //清除存储数据
 }
 function sendAndDeleteData() {
   CalculationReadPercent()
   //发送埋点信息
   //清除数据
-  DeleteData(atticleId)
+  DeleteData('articleData')
 }
 window.onbeforeunload = sendAndDeleteData
 //回收清理数据
-function DeleteData(atticleId) {
+function DeleteData() {
   if (buriedPointInterval) {
     clearInterval(buriedPointInterval)
   }
-  removeLocalStorage(articleId)
+  removeLocalStorage('articleData')
   removeLocalStorage('behavirorData')
 }
